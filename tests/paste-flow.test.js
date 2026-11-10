@@ -12,7 +12,7 @@ const Module  = require('module');
 process.env.TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN || '123456789:TEST-TOKEN-FOR-UNIT-TEST';
 process.env.OWNER_TELEGRAM_ID = process.env.OWNER_TELEGRAM_ID || '8703390483';
 
-const SRC = path.resolve(__dirname, '../src');
+const SRC = path.resolve(__dirname, '..');
 process.chdir(SRC);                       // index.js uses './database' and './sessions'
 
 const calls = { sockets: [], replies: [], telegram: [], launched: false };
@@ -96,7 +96,7 @@ Module._load = function (request, parent, isMain) {
 };
 
 // ── load the bot ─────────────────────────────────────────────
-require('../src/index.js');
+require('../index.js');
 
 // index.js keeps its Telegraf instance private; the constructor records it.
 const liveBot = FakeTelegraf.lastInstance;
@@ -138,7 +138,7 @@ const lastReply = (ctx) => ctx.replied[ctx.replied.length - 1] || '';
 
   // 2) pasting Base64 creds writes the session and starts a socket
   const before = calls.sockets.length;
-  const b = mkCtx(1001, 'Pixel!' + PASTE_B64);
+  const b = mkCtx(1001, 'TALKLESS!' + PASTE_B64);
   await textHandler(b, next);
   assert.match(lastReply(b), /Session saved for \+254704955033/i, 'saved message');
 
@@ -148,7 +148,15 @@ const lastReply = (ctx) => ctx.replied[ctx.replied.length - 1] || '';
   assert.strictEqual(written.me.id, CREDS.me.id, 'creds persisted verbatim');
   assert.strictEqual(calls.sockets.length, before + 1, 'makeWASocket called once');
 
-  // 3) same session again → "already connected" instead of a second socket
+  // 3) a foreign brand prefix is refused, and nothing is written
+  const foreign = mkCtx(7007, '💾 𝑷𝑨𝑺𝑻𝑬 𝑺𝑬𝑺𝑺𝑰𝑶𝑵 𝑰𝑫');
+  await textHandler(foreign, next);
+  const foreignPaste = mkCtx(7007, 'Pixel!' + PASTE_B64);
+  await textHandler(foreignPaste, next);
+  assert.match(lastReply(foreignPaste), /only .*TALKLESS.* sessions are accepted/i, 'foreign prefix rejected');
+  assert.ok(!fs.existsSync(path.join(SRC, 'sessions', 'wa_7007_254704955033')), 'nothing written for foreign prefix');
+
+  // 4) same session again → "already connected" instead of a second socket
   const c = mkCtx(1001, '💾 𝑷𝑨𝑺𝑻𝑬 𝑺𝑬𝑺𝑺𝑰𝑶𝑵 𝑰𝑫');
   await textHandler(c, next);
   const again = mkCtx(1001, PASTE_B64);
@@ -156,7 +164,7 @@ const lastReply = (ctx) => ctx.replied[ctx.replied.length - 1] || '';
   assert.match(lastReply(again), /already connected/i, 'duplicate guarded');
   assert.strictEqual(calls.sockets.length, before + 1, 'no extra socket');
 
-  // 4) raw creds.json paste for a second user
+  // 5) raw creds.json paste for a second user
   const d = mkCtx(2002, '💾 𝑷𝑨𝑺𝑻𝑬 𝑺𝑬𝑺𝑺𝑰𝑶𝑵 𝑰𝑫');
   await textHandler(d, next);
   const e = mkCtx(2002, JSON.stringify(CREDS));
@@ -164,7 +172,7 @@ const lastReply = (ctx) => ctx.replied[ctx.replied.length - 1] || '';
   assert.match(lastReply(e), /Session saved for \+254704955033 \(json\)/i, 'raw JSON accepted');
   assert.ok(fs.existsSync(path.join(SRC, 'sessions', 'wa_2002_254704955033', 'creds.json')), 'json paste persisted');
 
-  // 5) junk is rejected and no folder is created
+  // 6) junk is rejected and no folder is created
   const f = mkCtx(3003, '💾 𝑷𝑨𝑺𝑻𝑬 𝑺𝑬𝑺𝑺𝑰𝑶𝑵 𝑰𝑫');
   await textHandler(f, next);
   const g = mkCtx(3003, 'hello, this is not a session');
@@ -172,7 +180,7 @@ const lastReply = (ctx) => ctx.replied[ctx.replied.length - 1] || '';
   assert.match(lastReply(g), /does not look like a session ID/i, 'junk rejected');
   assert.ok(!fs.existsSync(path.join(SRC, 'sessions', 'wa_3003_254704955033')), 'nothing written for junk');
 
-  // 6) missing me.id is rejected even though the JSON is valid
+  // 7) missing me.id is rejected even though the JSON is valid
   const h = mkCtx(4004, '💾 𝑷𝑨𝑺𝑻𝑬 𝑺𝑬𝑺𝑺𝑰𝑶𝑵 𝑰𝑫');
   await textHandler(h, next);
   const noMe = Buffer.from(JSON.stringify({ noiseKey: { private: 'x' } })).toString('base64');
@@ -180,7 +188,7 @@ const lastReply = (ctx) => ctx.replied[ctx.replied.length - 1] || '';
   await textHandler(i, next);
   assert.match(lastReply(i), /no usable WhatsApp number/i, 'me.id required');
 
-  // 7) /cancel aborts an armed paste prompt instead of being parsed as one
+  // 8) /cancel aborts an armed paste prompt instead of being parsed as one
   const k1 = mkCtx(6006, '💾 𝑷𝑨𝑺𝑻𝑬 𝑺𝑬𝑺𝑺𝑰𝑶𝑵 𝑰𝑫');
   await textHandler(k1, next);
   const k2 = mkCtx(6006, '/cancel');

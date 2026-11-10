@@ -465,7 +465,7 @@ function promptSessionPaste(ctx) {
   localStates.set(uid, { action: 'pair_session', at: Date.now() });
   return ctx.reply(
     '💾 *Paste your session ID*\n\n' +
-    'Send the session string (Base64 creds, e.g. `Pixel!eyJ...` or `TALKLESS!eyJ...`) ' +
+    'Send the session string (Base64 creds, e.g. `TALKLESS!eyJ...`) ' +
     'or the raw `creds.json` content.\n\n' +
     '_The session is saved on this server only and connects immediately._\n\n' +
     'Send /cancel to abort.',
@@ -482,11 +482,23 @@ async function handleSessionPaste(ctx, raw) {
 
   const parsed = decodeSessionString(raw);
   if (!parsed.ok) {
+    if (parsed.reason === 'foreign_prefix') {
+      return ctx.reply(
+        `❌ That is a *${parsed.brand}!* session.\n\n` +
+        'Only `TALKLESS!` sessions are accepted here. Generate one at the Talkless pairing site and paste that instead.',
+        { parse_mode: 'Markdown' }
+      );
+    }
+    if (parsed.reason === 'unknown_prefix') {
+      return ctx.reply(
+        `❌ Unknown prefix \`${parsed.token}\`.\n\n` +
+        'Sessions must start with `TALKLESS!`. Bare Base64 or raw `creds.json` also work.',
+        { parse_mode: 'Markdown' }
+      );
+    }
     return ctx.reply(
       '❌ That does not look like a session ID.\n\n' +
-      'Send either:\n' +
-      '• the Base64 string (a `Pixel!` / `TALKLESS!` prefix is fine)\n' +
-      '• or the raw `creds.json` content\n\n' +
+      'Send a session that starts with `TALKLESS!`, or the raw `creds.json` content.\n\n' +
       'Tap 💾 𝑷𝑨𝑺𝑻𝑬 𝑺𝑬𝑺𝑺𝑰𝑶𝑵 𝑰𝑫 to try again.',
       { parse_mode: 'Markdown' }
     );

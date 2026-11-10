@@ -20,8 +20,11 @@
 // ============================================================
 'use strict';
 
-// Any 2–24 char brand token followed by "!" (Pixel!, TALKLESS-MD!, Varnox!…)
-const BRAND_PREFIX = /^[A-Za-z0-9_.-]{2,24}\s*!\s*/;
+// Only TALKLESS prefixes are accepted. `TALKLESS-MD!` is kept as an alias
+// because older builds emitted it; everything else is rejected by name.
+const BRAND_PREFIX = /^TALKLESS(?:[-_ ]?MD)?\s*!\s*/i;
+const FOREIGN_PREFIX = /^(pixel|blacklord|varnox|astro|junex?|amber)\s*[!-]/i;
+const ANY_PREFIX = /^[A-Za-z0-9_.-]{2,24}\s*!/;
 const FENCE_OPEN    = /^```[A-Za-z0-9_-]*[ \t]*\r?\n?/;
 const FENCE_CLOSE   = /```[ \t]*$/;
 const B64_CHARS     = /^[A-Za-z0-9+/]+={0,2}$/;
@@ -40,7 +43,7 @@ function stripWrappers(input) {
     text = text.replace(FENCE_OPEN, '').replace(FENCE_CLOSE, '').trim();
   }
 
-  // Repeated in case of "```json" + "Pixel!…"
+  // Repeated in case of "```json" + "TALKLESS!…"
   let guard = 0;
   while (guard++ < 3) {
     const next = text.replace(BRAND_PREFIX, '').replace(FENCE_OPEN, '').trim();
@@ -86,6 +89,23 @@ function unwrap(value, depth = 0) {
  * @returns {{ok:true, creds:object, format:'json'|'base64'} | {ok:false, reason:string}}
  */
 function decodeSessionString(input) {
+  // Fences first, so "```json\nPixel!…```" is still recognised as foreign.
+  const defenced = String(input == null ? '' : input)
+    .replace(/^\uFEFF/, '')
+    .trim()
+    .replace(FENCE_OPEN, '')
+    .replace(FENCE_CLOSE, '')
+    .trim();
+
+  const foreign = defenced.match(FOREIGN_PREFIX);
+  if (foreign) return { ok: false, reason: 'foreign_prefix', brand: foreign[1] };
+
+  // Anything that looks like "<word>!" but is not TALKLESS is refused, so a
+  // session can never arrive wearing another product's name.
+  if (ANY_PREFIX.test(defenced) && !BRAND_PREFIX.test(defenced)) {
+    return { ok: false, reason: 'unknown_prefix', token: defenced.match(ANY_PREFIX)[0] };
+  }
+
   const cleaned = stripWrappers(input);
   if (!cleaned) return { ok: false, reason: 'empty' };
 

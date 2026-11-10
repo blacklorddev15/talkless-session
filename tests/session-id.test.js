@@ -3,7 +3,7 @@
 const assert = require('assert');
 const {
   decodeSessionString, phoneFromCreds, missingCredFields, stripWrappers,
-} = require('../src/helper/sessionId');
+} = require('../helper/sessionId');
 
 const CREDS = {
   noiseKey: { private: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=', public: 'BBBB=' },
@@ -22,12 +22,10 @@ const doubleEncoded = JSON.stringify(JSON.stringify(CREDS));
 
 const cases = [
   ['raw base64', b64, 'base64'],
-  ['Pixel! prefix', 'Pixel!' + b64, 'base64'],
-  ['Blacklord! prefix', 'Blacklord!' + b64, 'base64'],
-  ['Varnox! prefix', 'varnox!' + b64, 'base64'],
   ['TALKLESS! prefix', 'TALKLESS!' + b64, 'base64'],
   ['TALKLESS-MD! prefix', 'TALKLESS-MD!' + b64, 'base64'],
-  ['prefix + space', 'Pixel! ' + b64, 'base64'],
+  ['lowercase talkless!', 'talkless!' + b64, 'base64'],
+  ['prefix + space', 'TALKLESS! ' + b64, 'base64'],
   ['json fence', '```json\n' + b64 + '\n```', 'base64'],
   ['bare fence', '```\n' + b64 + '\n```', 'base64'],
   ['url-safe base64', urlSafe, 'base64'],
@@ -49,6 +47,29 @@ for (const [label, input, expectedFormat] of cases) {
 }
 
 // ── rejections ────────────────────────────────────────────────
+const foreign = [
+  ['Pixel! prefix', 'Pixel!' + b64, 'pixel'],
+  ['Blacklord! prefix', 'Blacklord!' + b64, 'blacklord'],
+  ['Varnox! prefix', 'varnox!' + b64, 'varnox'],
+  ['Astro! prefix', 'Astro!' + b64, 'astro'],
+];
+for (const [label, input, brand] of foreign) {
+  const res = decodeSessionString(input);
+  assert.strictEqual(res.ok, false, `${label}: expected rejection`);
+  assert.strictEqual(res.reason, 'foreign_prefix', `${label}: reason`);
+  assert.strictEqual(res.brand.toLowerCase(), brand, `${label}: brand`);
+  passed++;
+}
+
+// Any other "<word>!" is refused too — TALKLESS is the only accepted prefix.
+for (const label of ['SomeBot!', 'WA-MD!', 'Xyz!']) {
+  const res = decodeSessionString(label + b64);
+  assert.strictEqual(res.ok, false, `${label}: expected rejection`);
+  assert.strictEqual(res.reason, 'unknown_prefix', `${label}: reason`);
+  passed++;
+}
+
+// Empty / junk
 const bad = [
   ['empty', '   '],
   ['plain text', 'hello there'],
@@ -78,8 +99,11 @@ assert.deepStrictEqual(
 );
 passed += 2;
 
-// ── wrapper stripping is idempotent ──────────────────────────
-assert.strictEqual(stripWrappers('```json\nPixel!' + b64 + '\n```'), b64);
-passed++;
+// ── wrapper stripping ────────────────────────────────────────
+assert.strictEqual(stripWrappers('```json\nTALKLESS!' + b64 + '\n```'), b64);
+// Foreign prefixes are deliberately NOT stripped — decodeSessionString rejects
+// them before this point, and leaving them intact proves the gate ran.
+assert.strictEqual(stripWrappers('Pixel!' + b64), 'Pixel!' + b64);
+passed += 2;
 
 console.log(`ok — ${passed} assertions passed`);
