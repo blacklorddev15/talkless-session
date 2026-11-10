@@ -1,0 +1,35 @@
+{
+  "165498008420598": {
+    "wallet": 200,
+    "bank": 0,
+    "lastDaily": 1791620297751,
+    "lastWork": 0,
+    "lastRob": 0,
+    "inventory": [],
+    "level": 1,
+    "xp": 0,
+    "streak": 1
+  },
+  "104381278085125": {
+    "wallet": 200,
+    "bank": 0,
+    "lastDaily": 1791621067017,
+    "lastWork": 0,
+    "lastRob": 0,
+    "inventory": [],
+    "level": 1,
+    "xp": 0,
+    "streak": 1
+  },
+  "254748876849": {
+    "wallet": 200,
+    "bank": 0,
+    "lastDaily": 1791987998616,
+    "lastWork": 0,
+    "lastRob": 0,
+    "inventory": [],
+    "level": 1,
+    "xp": 0,
+    "streak": 1
+  }
+}

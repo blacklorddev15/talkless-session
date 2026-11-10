@@ -1,0 +1,45 @@
+{
+  "guess": {
+    "210428214911190@lid": {
+      "number": 40,
+      "tries": 5,
+      "expires": 1791378715447
+    }
+  },
+  "hangman": {
+    "37122123800691@lid": {
+      "word": "EXPRESS",
+      "guessed": [],
+      "tries": 6,
+      "expires": 1791390097630
+    },
+    "40708186607647@lid": {
+      "word": "MONGODB",
+      "guessed": [],
+      "tries": 6,
+      "expires": 1791573870433
+    },
+    "231907329613876@lid": {
+      "word": "JAVASCRIPT",
+      "guessed": [],
+      "tries": 6,
+      "expires": 1792182375593
+    },
+    "88627304497290@lid": {
+      "word": "CLOUDFLARE",
+      "guessed": [],
+      "tries": 6,
+      "expires": 1792198437656
+    }
+  },
+  "riddle": {
+    "138633692581970@lid": {
+      "answer": "echo",
+      "expires": 1791408074887
+    },
+    "120363409102848140@g.us": {
+      "answer": "ton",
+      "expires": 1791801254255
+    }
+  }
+}

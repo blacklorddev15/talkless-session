@@ -1,0 +1,22 @@
+# ── secrets ──────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── dependencies ─────────────────────────────────────────────
+node_modules/
+
+# ── per-deployment WhatsApp state ────────────────────────────
+sessions/
+database/pendingReplies.json
+
+# ── runtime data written by the bot (contains real user data) ─
+database/users.json
+database/pairs.json
+database/premium.json
+database/prem_data.json
+database/settings.json
+
+# ── misc ─────────────────────────────────────────────────────
+*.log
+.DS_Store
